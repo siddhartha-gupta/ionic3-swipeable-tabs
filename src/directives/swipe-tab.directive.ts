@@ -1,12 +1,9 @@
-import { Directive, ElementRef, Input, Output, EventEmitter, OnInit, Host, Self, HostListener, Renderer } from '@angular/core';
+import { Directive, ElementRef, Input, Output, EventEmitter, OnInit, Host, Self, HostListener, Renderer2 } from '@angular/core';
 import { NavController, Tabs } from 'ionic-angular';
 import { Gesture } from 'ionic-angular/gestures/gesture';
 
 @Directive({
     selector: '[swipeTab]',
-    /* host: {
-        '(swipe)': 'swipeHandler($event)'
-    } */
 })
 
 export class SwipeTabDirective implements OnInit {
@@ -17,28 +14,11 @@ export class SwipeTabDirective implements OnInit {
     constructor(
         public _el: ElementRef,
         public navCtrl: NavController,
-        private _renderer: Renderer
+        private _renderer: Renderer2
     ) { }
 
     ngOnInit() {
-        setTimeout(() => {
-            // Remove the inputWrapper attribute (not really necessary, but just to be clean)
-            this._renderer.setElementAttribute(this._el.nativeElement, "inputWrapper", null);
-
-            // Get parent of the original input element
-            var parent = this._el.nativeElement.parentNode;
-
-            // Create a div and add it to the parent
-            // Note: it seems that Renderer creates the element in the right place,
-            // no need to specify where.
-            var divElement = this._renderer.createElement(parent, "div");
-
-            // Add class "input-wrapper"
-            this._renderer.setElementClass(divElement, "input-wrapper", true);
-
-            // Move the input as a child of the div
-            divElement.appendChild(this._el.nativeElement);
-
+        /* setTimeout(() => {
             this.swipeGesture = new Gesture(divElement);
             this.swipeGesture.listen();
             console.log('guesture added');
@@ -46,19 +26,30 @@ export class SwipeTabDirective implements OnInit {
             this.swipeGesture.on('swipe', (event) => {
                 this.swipeHandler(event);
             });
-        }, 5000);
+        }, 5000); */
     }
 
-    ionViewDidEnter() {
+    onTabChange(tabIndex: number) {
+        console.log('in directive onTabChange: ', tabIndex);
+
+        this.createWrapperDiv(tabIndex);
+    }
+
+    createWrapperDiv(tabIndex: number) {
+        var elem = this._el.nativeElement.querySelectorAll('ion-tab')[tabIndex];
+        var content = elem.getElementsByTagName('ion-content')[0];
+
+        var contentHtml = content.innerHTML;
+
+        var divElement = this._renderer.createElement("div");
+        this._renderer.addClass(divElement, "input-wrapper");
+        // this._renderer.removeChild(content);
         // debugger;
-        // console.log(this.elementRef);
-        // this.elementRef.nativeElement.querySelector('ion-content').addEventListener('click', this.onClick.bind(this));
-    }
+        this._renderer.insertBefore(content, divElement, null);
 
-    /*@HostListener('swipe', ['$event'])
-    onSwipe(e: any) {
-        console.log('onSwipe');
-    }*/
+        // this._renderer.removeChild(content, content);
+        // this._renderer.appendChild(divElement, content);
+    }
 
     swipeHandler(event) {
         console.log('swipeHandler');
