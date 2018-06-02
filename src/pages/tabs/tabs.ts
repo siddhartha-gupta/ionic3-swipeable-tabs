@@ -16,4 +16,8 @@ export class TabsPage {
   constructor() {
 
   }
+
+  swipeEvent($event) {
+    console.log('swipeEvent');
+  }
 }
