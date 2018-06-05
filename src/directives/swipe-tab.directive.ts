@@ -1,5 +1,4 @@
-import { Directive, ElementRef, Input, Output, EventEmitter, OnInit, Host, Self, HostListener, Renderer2 } from '@angular/core';
-import { NavController, Tabs } from 'ionic-angular';
+import { Directive, ElementRef, Output, EventEmitter, OnInit, Renderer2 } from '@angular/core';
 import { Gesture } from 'ionic-angular/gestures/gesture';
 
 @Directive({
@@ -7,57 +6,74 @@ import { Gesture } from 'ionic-angular/gestures/gesture';
 })
 
 export class SwipeTabDirective implements OnInit {
-    private el: HTMLElement;
     private swipeGesture: Gesture;
     private currentTabIndex: number = 0;
+    private tabCount: number = 0;
+
+    @Output() onTabChange = new EventEmitter();
 
     constructor(
         public _el: ElementRef,
-        public navCtrl: NavController,
         private _renderer: Renderer2
     ) { }
 
     ngOnInit() {
-        /* setTimeout(() => {
-            this.swipeGesture = new Gesture(divElement);
-            this.swipeGesture.listen();
-            console.log('guesture added');
-
-            this.swipeGesture.on('swipe', (event) => {
-                this.swipeHandler(event);
-            });
-        }, 5000); */
+        this.tabCount = this._el.nativeElement.querySelectorAll('ion-tab').length - 1;
     }
 
-    onTabChange(tabIndex: number) {
-        console.log('in directive onTabChange: ', tabIndex);
-
-        this.createWrapperDiv(tabIndex);
-    }
-
-    createWrapperDiv(tabIndex: number) {
+    onTabInitialized(tabIndex: number) {
         var elem = this._el.nativeElement.querySelectorAll('ion-tab')[tabIndex];
         var content = elem.getElementsByTagName('ion-content')[0];
 
-        var contentHtml = content.innerHTML;
+        if (content.querySelector('.swipe-area') === null) {
+            console.log('add swipe area');
+            this.createWrapperDiv(content);
+        }
+    }
 
+    createWrapperDiv(content: HTMLElement) {
         var divElement = this._renderer.createElement("div");
-        this._renderer.addClass(divElement, "input-wrapper");
-        // this._renderer.removeChild(content);
-        // debugger;
+        this._renderer.addClass(divElement, "swipe-area");
         this._renderer.insertBefore(content, divElement, null);
 
-        // this._renderer.removeChild(content, content);
-        // this._renderer.appendChild(divElement, content);
+        while (content.children.length > 1) {
+            let child = content.children[0];
+            this._renderer.removeChild(content, child);
+            this._renderer.appendChild(divElement, child);
+        }
+
+        this.swipeGesture = new Gesture(divElement);
+        this.swipeGesture.listen();
+        console.log('add swipe guesture');
+
+        this.swipeGesture.on('swipe', (event) => {
+            this.swipeHandler(event);
+        });
+        /* this._renderer.listen(content, 'swipe', ($event) => {
+            this.swipeHandler($event);
+        }); */
     }
 
     swipeHandler(event) {
         console.log('swipeHandler');
         if (event.direction == '2') {
-            this.currentTabIndex++;
+            this.moveForward();
         } else if (event.direction == '4') {
-            this.currentTabIndex--;
+            this.moveBackward();
         }
-        // this.navCtrl.parent.select(2);
+    }
+
+    moveForward() {
+        if (this.currentTabIndex < this.tabCount) {
+            this.currentTabIndex++;
+            this.onTabChange.emit(this.currentTabIndex);
+        }
+    }
+
+    moveBackward() {
+        if (this.currentTabIndex > 0) {
+            this.currentTabIndex--;
+            this.onTabChange.emit(this.currentTabIndex);
+        }
     }
 }
