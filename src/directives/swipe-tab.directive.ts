@@ -6,11 +6,12 @@ import { Gesture } from 'ionic-angular/gestures/gesture';
 })
 
 export class SwipeTabDirective implements OnInit {
-    private swipeGesture: Gesture;
     private currentTabIndex: number = 0;
     private tabCount: number = 0;
     private swipeCoords: [number, number];
     private swipeDuration: number;
+    private browserSwipeGesture: Gesture;
+    private touchListenersFns = [];
 
     @Output() onTabChange = new EventEmitter();
 
@@ -49,17 +50,19 @@ export class SwipeTabDirective implements OnInit {
 
     addEventListeners(divElement: HTMLElement) {
         if ('ontouchstart' in document.documentElement) {
-            this._renderer.listen(divElement, 'touchstart', ($event) => {
-                this.deviceSwipeHandler($event, 'start');
-            });
-            this._renderer.listen(divElement, 'touchend', ($event) => {
-                this.deviceSwipeHandler($event, 'end');
-            });
+            this.touchListenersFns.push(
+                this._renderer.listen(divElement, 'touchstart', ($event) => {
+                    this.deviceSwipeHandler($event, 'start');
+                }),
+                this._renderer.listen(divElement, 'touchend', ($event) => {
+                    this.deviceSwipeHandler($event, 'end');
+                })
+            );
         } else {
-            this.swipeGesture = new Gesture(divElement);
-            this.swipeGesture.listen();
+            this.browserSwipeGesture = new Gesture(divElement);
+            this.browserSwipeGesture.listen();
 
-            this.swipeGesture.on('swipe', (event) => {
+            this.browserSwipeGesture.on('swipe', (event) => {
                 this.browserSwipeHandler(event);
             });
         }
@@ -108,6 +111,14 @@ export class SwipeTabDirective implements OnInit {
         if (this.currentTabIndex > 0) {
             this.currentTabIndex--;
             this.onTabChange.emit(this.currentTabIndex);
+        }
+    }
+
+    ngOnDestroy() {
+        if (this.touchListenersFns.length > 0) {
+            this.touchListenersFns.forEach(fn => fn());
+        } else if (this.browserSwipeGesture) {
+            this.browserSwipeGesture.unlisten();
         }
     }
 }
